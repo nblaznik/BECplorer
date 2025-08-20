@@ -7,6 +7,12 @@
 </p>
 
 
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#quick-start">Quick start</a> •
+  <a href="#usage">Usage</a>
+</p>
+
 ---
 
 ## Features
