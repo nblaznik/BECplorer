@@ -11,8 +11,8 @@
 
 <p align="center">
   <a href="#features">Features</a> •
-  <a href="#quick-start">Quick start</a> •
-  <a href="#usage">Usage</a>
+  <a href="#Requirements">Requirements</a> •
+  <a href="#quick-start">Quick start</a>
 </p>
 
 ---
