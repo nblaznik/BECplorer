@@ -60,8 +60,6 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 # 3) Install
 pip install -U pip
 pip install -r requirements.txt
-# or: pip install -e .   # if you provide a pyproject.toml/setup.cfg
 
 # 4) Run
 python -m gui.py
-# or: becplorer           # if installed as a console script
