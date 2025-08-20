@@ -62,5 +62,5 @@ pip install -r requirements.txt
 # or: pip install -e .   # if you provide a pyproject.toml/setup.cfg
 
 # 4) Run
-python -m becplorer
+python -m gui.py
 # or: becplorer           # if installed as a console script
