@@ -27,6 +27,8 @@ Built with PyQt5. Special features for analysis of cold atoms data obtained thro
 - **Comment**: enables commenting and exporting batch comments.
 - **Session management**: autosave session state; reopen where you left off.
 - **Export**: figures, CSVs of fit parameters, and MP4/GIF for time series.
+- **SOAH-features**: fast-Fourier transform analysis of interference patterns, extraction of the entire field. For details and the theory behind it see Blaznik's PhD thesis. 
+- **SVD and PCA-features**: principal-component analysis features - using large datasets of background images, a PCA analysis can be performed in order to minimize the noise of the phase images obtained through SOAH. For detailes see Blaznik's PhD thesis, or in the <a href="https://orcid.org/0009-0003-7288-719X">article</a> •
 
 > Screenshots  
 > <img width="365" height="192" alt="BEC_Viewer (4)" src="https://github.com/user-attachments/assets/2807d665-2cd4-4ddf-9035-fb0d464c232a" />
