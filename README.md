@@ -18,6 +18,7 @@ Built with PyQt5. Special features for analysis of cold atoms data obtained thro
 ## Features
 
 - **Fast FITS viewer**: open large image stacks; lazy-loading for speed.
+- **Live plotting and analysis**: real-time updates and analysis of the incoming data. Features such as live particle number, temperature and cooling efficiency.
 - **Interactive inspection**: pan/zoom, pixel probe, ROI selection, linecuts.
 - **Batch tools**: normalization, cropping, mask application.
 - **BEC-specific analysis**:
