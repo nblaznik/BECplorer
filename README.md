@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img align="left" width="150" height="150" alt="icon" src="https://github.com/user-attachments/assets/b66db70b-0979-4a14-be07-a72687521d06">
+  <img align="left" width="250" height="250" alt="icon" src="https://github.com/user-attachments/assets/b66db70b-0979-4a14-be07-a72687521d06">
   BECplorer — BEC Data Visualiser
 </h1>
 
