@@ -1,12 +1,18 @@
 <!-- Optional banner -->
 <!-- ![BECplorer](docs/banner.png) -->
 
-<h1 align="center">BECplorer — BEC Data Visualiser</h1>
-<p align="center">
-<img width="128" height="128" alt="icon" src="https://github.com/user-attachments/assets/b66db70b-0979-4a14-be07-a72687521d06" />
-A lightweight framework for inspecting and analyzing <code>.fits</code> images from the UU BEC Lab.<br>
-Built with PyQt5. Special features for analysis of cold atoms data obtained through Off-axis holography.
-</p>
+<div align="center" style="display: flex; align-items: center; justify-content: center;">
+  <div style="flex: 1; max-width: 10%; text-align: center;">
+    <img width="128" height="128" alt="icon" src="https://github.com/user-attachments/assets/b66db70b-0979-4a14-be07-a72687521d06" />
+  </div>
+  <div style="flex: 9; max-width: 90%; text-align: left; padding-left: 20px;">
+    <h1>BECplorer — BEC Data Visualiser</h1>
+    <p>
+      A lightweight framework for inspecting and analyzing <code>.fits</code> images from the UU BEC Lab.<br>
+      Built with PyQt5. Special features for analysis of cold atoms data obtained through Off-axis holography.
+    </p>
+  </div>
+</div>
 
 <p align="center">
   <a href="#features">Features</a> •
