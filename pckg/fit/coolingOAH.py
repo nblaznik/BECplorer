@@ -1,0 +1,443 @@
+import os
+import numpy as np
+import csv
+import scipy.odr as odr
+import math
+import astropy.io.fits as pyfits
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+
+try:
+    from ..fit.fitfunctions import *
+    from ..fit import OAH_refocus as OAH_refocus
+except:
+    from fitfunctions import *
+    import OAH_refocus as OAH_refocus
+
+
+
+# #######################################################################################
+#  _____                  _                                          _                  #
+# |_   _|                | |                                        | |                 #
+#   | | _ __  _ __  _   _| |_   _ __   __ _ _ __ __ _ _ __ ___   ___| |_ ___ _ __ ___   #
+#   | || '_ \| '_ \| | | | __| | '_ \ / _` | '__/ _` | '_ ` _ \ / _ \ __/ _ \ '__/ __|  #
+#  _| || | | | |_) | |_| | |_  | |_) | (_| | | | (_| | | | | | |  __/ ||  __/ |  \__ \  #
+#  \___/_| |_| .__/ \__,_|\__| | .__/ \__,_|_|  \__,_|_| |_| |_|\___|\__\___|_|  |___/  #
+#            | |               | |                                                      #
+#            |_|               |_|                                                      #
+# #######################################################################################
+
+m_seq=[
+    [20220517, 38, 0.000, 'gauss', 'quad1', 1, [4, 4], [1, -1, 1, -1], [0., [1100., 1120.], 1., [50., 50.], 1., [80., 600.]], 130],  # N = 0
+    [20220517, 39, 0.000, 'gauss', 'quad1', 1, [4, 4], [700, -700, 600, -600], [0., [1100., 1120.], 1., [50., 50.], 1., [80., 600.]], 130],  # N = 1
+    [20220517, 40, 0.000, 'gauss', 'quad1', 1, [4, 4], [1, -1, 1, -1], [0., [1100., 1120.], 1., [50., 50.], 1., [80., 600.]], 130],  # N = 2
+    [20220517, 41, 0.000, 'gauss', 'quad1', 1, [4, 4], [700, -700, 1, -1],  [0., [1100., 1120.], 1., [50., 50.], 1., [80., 600.]], 130],  # N = 3
+    [20220518, 4, 0.000, 'gauss', 'quad1', 1, [4, 4], [700, -700, 1, -1], [0., [1100., 1120.], 1., [50., 50.], 1., [80., 600.]], 130],  # N = 4
+    [20220518, 9, 0.000, 'tf', 'quad1', 1, [1, 1], [1050, -950, 900, -900], [0., [1100., 1120.], 1., [10., 60.], 1., [10., 60.]], 130],  # N = 5, nice condensate
+    [20220518, 13, 0.000, 'tf', 'quad1', 1, [1, 1], [1050, -950, 900, -900], [0., [1100., 1120.], 1., [10., 60.], 1., [10., 60.]], 130],  # N = 6, nice condensate
+    [20220518, 15, 0.000, 'gauss', 'quad1', 1, [4, 4], [1000, -950, 700, -750], [0., [1100., 1120.], 1., [10., 60.], 1., [80., 600.]], 130],  # N = 7, nice thermal cloud, 10 images
+    [20220518, 16, 0.000, 'gauss', 'quad1', 1, [4, 4], [1000, -950, 650, -750], [0., [1100., 1120.], 1., [10., 60.], 1., [80., 600.]], 1080],  # N = 8, nice thermal cloud, 25 images
+    [20220518, 17, 0.000, 'gauss', 'quad1', 1, [4, 4], [1000, -950, 650, -750], [0., [1100., 1120.], 1., [10., 60.], 1., [80., 600.]], 1080],  # N = 9, nice thermal cloud, 25 images
+    [20220518, 21, 0.000, 'gauss', 'quad1', 1, [1, 1], [1000, -950, 650, -850], [0., [1100., 1120.], 1., [10., 60.], 1., [80., 600.]], 1000],  # N = 10, through cooling, 25 images
+    [20220518, 22, 0.000, 'gauss', 'quad1', 1, [4, 4], [1000, -950, 550, -750], [0., [1100., 1120.], 1., [10., 60.], 1., [80., 600.]], 1000],  # N = 11, through cooling, 25 images
+    [20220518, 23, 0.000, 'gauss', 'quad1', 1, [4, 4], [1000, -950, 550, -750], [0., [1100., 1120.], 1., [10., 60.], 1., [80., 600.]], 1000],  # N = 12, through cooling (T), after 5s RF2, 25 images
+    [20220518, 24, 0.000, 'tf', 'quad1', 1, [4, 4], [1000, -950, 550, -750], [0., [1100., 1120.], 1., [10., 60.], 1., [80., 600.]], 180],  # N = 13, through cooling (C), after 15s RF2, 10 images
+    [20220518, 25, 0.000, 'tf', 'quad1', 1, [4, 4], [1000, -950, 550, -750], [0., [1100., 1120.], 1., [10., 60.], 1., [80., 600.]], 180],  # N = 14, through cooling, after 15s RF2, 10 images
+    [20220518, 26, 0.000, 'gauss', 'quad1', 1, [4, 4], [1000, -950, 550, -750], [0., [1100., 1120.], 1., [10., 60.], 1., [80., 600.]], 1000],  # N = 15, through cooling (T/C), after 5s RF2, 10 images
+    [20220518, 27, 0.000, 'gauss', 'quad1', 1, [4, 4], [1000, -950, 550, -750], [0., [1100., 1120.], 1., [10., 60.], 1., [80., 600.]], 100],  # N = 16, through cooling, after 5s RF2, 25 images
+    [20220518, 29, 0.000, 'gauss', 'quad1', 1, [4, 4], [1000, -950, 550, -750], [0., [1100., 1120.], 1., [10., 60.], 1., [80., 600.]], 600],  # N = 17, same as above- ignore 15
+    [20220518, 30, 0.000, 'gauss', 'quad1', 1, [4, 4], [1000, -950, 550, -750], [0., [1100., 1120.], 1., [10., 60.], 1., [80., 600.]], 600],  # N = 18, same as above
+    [20220523, 13, 0.000, 'gauss', 'quad1', 1, [4, 4], [1, -1, 650, -850], [0., [200, 1200], 1., [10., 100.], 1., [80., 600.]], 1000],  # N = 19, same as above
+    [20220523, 14, 0.000, 'gauss', 'quad1', 1, [4, 4], [1, -1, 650, -850], [0., [200, 1200], 1., [10., 100.], 1., [80., 600.]], 400],  # N = 20, same as above
+    [20220523, 22, 0.000, 'gauss', 'quad1', 1, [4, 4], [1, -1, 650, -850], [0., [200, 1200], 1., [10., 100.], 1., [80., 600.]], 1000],  # N = 21, same as above
+    [20220523, 23, 0.000, 'tf', 'quad1', 1, [1, 1], [80, -20, 980, -1150], [0., [200, 1200], 1., [10., 100.], 1., [80., 600.]], 1000],  # N = 22, same as above
+    [20220523, 24, 0.000, 'gauss', 'quad1', 1, [1, 1], [80, -20, 780, -850], [0., [200, 1200], 1., [10., 100.], 1., [80., 600.]], 1000],  # N = 23, same as above
+    [20220523, 25, 0.000, 'gauss', 'quad1', 1, [1, 1], [80, -20, 780, -850], [0., [200, 1200], 1., [10., 100.], 1., [80., 600.]], 1000],  # N = 24, same as above
+    [20220523, 83, 0.000, 'bimodal', 'quad1', 1, [1, 1], [80, -20, 780, -850], [0., [200, 1200], 1., [10., 100.], 1., [80., 600.]], 800000],  # N = 25, same as above
+    [20220523, 85, 0.000, 'bimodal', 'quad1', 1, [4, 4], [80, -20, 780, -850], [0., [200, 1200], 1., [10., 100.], 1., [80., 600.]], 800000],  # N = 25, same as above
+    [20220825, 149, 0.000, 'bimodal', 'quad2', 1, [4, 4], [150, 275, 900, 1400], [0., [200, 1100], 1., [10., 100.], 1., [10., 20.]], 3.05],  # N = 25, same as above
+]
+# [date, shot, dz_focus, mode, quad, NUM, bin, cut, intial_guess_parameters, time_between_shots, ]
+
+
+# To select a particular run (with the best cut and binning options, guess etc.)
+N = -1
+ignore = [] #[1, 8, 10]
+# #######################################################################################
+#                                       END                                             #
+# #######################################################################################
+
+
+def coolingOAH_main(m_seq, update=None, ignore=ignore, plot_var=True):
+    """ Main function that defines, plots and does all that is needed. """
+    def get_parameter(date, shot, paramname):
+        """
+        Get the value of the parameter form the parameters.param file. Very often used, might be better to import
+        it from the pcgk/fits file. But it might be better to include those functions here.
+        """
+        path = '/storage/data/' + str(date) + '/'
+        image = str(shot).zfill(4) + '/'
+        full_path = path + image
+        param = "N/A"
+        try:
+            with open(full_path + 'parameters.param') as paramfile:
+                csvreader = csv.reader(paramfile, delimiter=',')
+                for row in csvreader:
+                    if row[0] == paramname:
+                        param = float(row[1])
+        except:
+            param = "N/A"
+        return param
+
+    # ########################### VARIABLES #################################
+    date = m_seq[0]  # Date of measurement
+    shot = m_seq[1]  # Shot number (38 - 42, 44-46)
+    dz_focus = m_seq[2]  # Defocus factor
+    mode = m_seq[3]  # gauss, tf or bimodal
+    quad = m_seq[4]  # Quad in the fourier space - depends on ref beam
+    NUM = m_seq[5]  # Number in a sequence
+    bin = m_seq[6]  # Binning (binx, binz)
+    cut = m_seq[7]  # Cutting (xmin, xmax, zmin, zmax)
+    ang, center, tfa, tfw, ga, gw = m_seq[8]  # Initial fit guess:
+    # Or get it from  the params file
+    try:
+        time_between_shots = float(get_parameter(date, shot, "reptime")) \
+                             + float(get_parameter(date, shot, "thold")) \
+                             + float(get_parameter(date, shot, "t_light"))*1e-3 \
+                             + float(get_parameter(date, shot, "tof")) \
+                             + float(get_parameter(date, shot, "post_img_wait")) \
+                             + 30.
+    except:
+        time_between_shots = m_seq[9]  # Time between shots
+
+    # initial_time = float(get_parameter(date, shot, "rftime1")) + float(get_parameter(date, shot, "rftime2"))
+
+    # ################################# CONSTANTS #################################
+    detuning = 0  # change to 350 for OAH
+    wavelength = 589e-9
+    pixelsize = 6.5E-6 / 2.63
+    prefactor = float((1 + 4 * (float(detuning) ** 2)) * 2 * np.pi / (3 * (float(wavelength) ** 2)) * 18. / 5.)
+    kB = 1.38064852E-23
+    m = 3.81923979E-26
+    hb = 1.0545718E-34
+    asc = 2.802642E-9
+    mu0 = 1E-50
+    e0 = 8.854187E-12
+    fx = 91.9
+    fz = 15.2
+    linew = 9.7e-3
+    det_1 = 35e3
+    ang = .05
+    lamb0 = 589.1e-3
+    det_0 = det_1 + 15.8e-3
+    det_2 = det_1 - 34.4e-3
+    sigm_l = 3 * wavelength ** 2 / (2 * np.pi)
+    k0 = 2 * np.pi / wavelength
+    polarizability = 2j/3 * sigm_l / k0 * (1 / (1 - 2j * det_0 / linew) + 1 / (1 - 2j * det_1 / linew) + 1 / (1 - 2j * det_2 / linew))
+    # prefactor = prefactor * np.pi * polarizability / e0 / wavelength
+
+
+    # STEP 1: convert the interference pattern into density profile
+    def OAHprocess(date, shot, dz_focus, update=update):
+        path = '/storage/data/' + str(date) + '/'
+        image = str(shot).zfill(4) + '/'
+        full_path = path + image
+        # If the preprocessing was done before, take that file
+        if os.path.exists(full_path + "pics_foc_ss_{:}.fits".format(dz_focus)):  # If single shot:
+            print("Analysis previously completed")
+            output = pyfits.open(full_path + "pics_foc_ss_{:}.fits".format(dz_focus))[0].data.astype(float)[:]
+        elif os.path.exists(full_path + "pics_foc_{:}.fits".format(dz_focus)):  # If multi shot
+            print("Analysis previously completed")
+            output = pyfits.open(full_path + "pics_foc_{:}.fits".format(dz_focus))[0].data.astype(float)[:]
+        else:
+            # Import 0.fits file to get the number of shots
+            atom_all = pyfits.open(full_path + '0.fits')[0].data.astype(float)[:]
+            output = []
+            # If a single shot only
+            if atom_all.shape[0] == 1:
+                ang = OAH_refocus.HI_refocus(date, shot, 0, dz_focus, quad=quad, plot=False)
+                output.append(
+                    ang)  # We do this, so that we can call the 0th element of the group, as we do with multiple images.
+                prihdr = pyfits.open(full_path + "0.fits")[0].header  # Get the header
+                hdu = pyfits.PrimaryHDU(output, header=prihdr)
+                hdu.writeto(full_path + "pics_foc_ss_{:}.fits".format(dz_focus))
+
+            else:
+                for it in range(atom_all.shape[0]):
+                    os.system('clear')
+                    ang = OAH_refocus.HI_refocus(date, shot, it, dz_focus, quad=quad, plot=False)
+                    output.append(ang)
+                    if __name__ != "__main__":
+                        update.setValue(it * 100 // atom_all.shape[0])
+
+                prihdr = pyfits.open(full_path + "0.fits")[0].header  # Get the header
+                hdu = pyfits.PrimaryHDU(output, header=prihdr)
+                hdu.writeto(full_path + "pics_foc_{:}.fits".format(dz_focus))  # Save it now, for next time
+        return output
+
+    # STEP 2: prep the picture and optimize for quick fitting
+    def picPrep(output, NUM, cut=cut, bin=bin):
+        xmin, xmax, zmin, zmax = cut
+        xbin, zbin = bin
+        mask = output[NUM] == 0
+        pic = np.ma.array(output[NUM], mask=mask)
+        # Cut pic:
+        pic = pic[xmin:xmax, zmin:zmax]
+        # Bin pic:
+        if pic.shape[0] % xbin != 0:
+            pic = pic[:-(pic.shape[0] % xbin), :]
+        if pic.shape[1] % zbin != 0:
+            pic = pic[:, :-(pic.shape[1] % zbin)]
+        pic = pic.reshape(pic.shape[0] // xbin, xbin, pic.shape[1] // zbin, zbin).mean(axis=3).mean(axis=1)
+
+        # Normalize pic
+        pic = pic/abs(pic.min()) + 1
+        return pic
+
+    # STEP3: fit each of those images with a gaussian and extract the particle numbers and temperatures.
+    def fitPic(pic, mode=mode, date=date, shot=shot, bin=bin, cut=cut):
+        # pic = pic[10:-10, 10:-10]
+        pic = pic + abs(pic.min()) + 0.00001
+        avg_bg = pic.mean()
+        pic = pic / avg_bg
+
+        path = '/storage/data/' + str(date) + '/'
+        image = str(shot).zfill(4) + '/'
+        full_path = path + image
+        x = np.arange(pic.shape[0])
+        y = np.arange(pic.shape[1])
+        xv, yv = np.meshgrid(x, y, indexing='ij')
+        fitvars = np.array([xv, yv]).reshape(2, -1)
+
+        par_names = ['offset', 'ampl', 'ang', 'xmid', 'ymid', 'tfamp', 'tfxw', 'tfyw', 'gamp', 'gxw', 'gyw']
+        init_guess = np.array([0., 1., ang, center[0], center[1], tfa, tfw[0], tfw[1], ga, gw[0], gw[1]])
+        bin_scaling = np.array([1., 1., 1., bin[0], bin[1], 1., bin[0], bin[1], 1., bin[0], bin[1]])
+        rng_offset = np.array([0., 0., 0., cut[0], cut[2], 0., 0., 0., 0., 0., 0.])
+        to_physical = np.array(
+            [1., 1., 1., pixelsize, pixelsize, prefactor, pixelsize, pixelsize, prefactor, pixelsize, pixelsize])
+        corr_guess = (init_guess - rng_offset) / bin_scaling
+
+        if mode == "gauss":
+            corr_guess = np.append(corr_guess[:5], corr_guess[-3:])
+            bin_scaling = np.append(bin_scaling[:5], bin_scaling[-3:])
+            rng_offset = np.append(rng_offset[:5], rng_offset[-3:])
+            par_names = np.append(par_names[:5], par_names[-3:])
+            to_physical = np.append(to_physical[:5], to_physical[-3:])
+            odrmodel = odr.Model(gaussmod)  # Store information for the gaussian fitting model
+
+        if mode == "tf":
+            corr_guess = corr_guess[:8]
+            bin_scaling = bin_scaling[:8]
+            rng_offset = rng_offset[:8]
+            par_names = par_names[:8]
+            to_physical = to_physical[:8]
+            odrmodel = odr.Model(tfmod)  # Store information for the tf fitting model
+
+        if mode == "bimodal":
+            odrmodel = odr.Model(bimodalmod)
+            # Store information for the bimodal fitting model
+
+
+        # Run the ODR Fit procedure.
+        odrdata = odr.Data(fitvars[:, ~pic.mask.flatten()], pic.flatten()[~pic.mask.flatten()])
+        odrobj = odr.ODR(odrdata, odrmodel, beta0=corr_guess)
+        odrobj.set_job(2)  # Ordinary least-sqaures fitting
+        odrout = odrobj.run()
+        odrout.pprint()
+
+        # This sets the angle to be correct wrt x and y.
+        if np.abs(odrout.beta[2] % np.pi) > np.pi / 4.:
+            odrout.beta[2] = odrout.beta[2] - np.pi / 2.
+            print("Performing xy swap due to angle.")
+            if mode == "bimodal":
+                tmp_tfx = odrout.beta[6]
+                tmp_gx = odrout.beta[-2]
+                odrout.beta[6] = odrout.beta[7]
+                odrout.beta[7] = tmp_tfx
+                odrout.beta[-2] = odrout.beta[-1]
+                odrout.beta[-1] = tmp_gx
+            else:
+                tmp = odrout.beta[6]
+                odrout.beta[6] = odrout.beta[7]
+                odrout.beta[7] = tmp
+
+        if mode == "gauss":
+            fitresult = gaussmod(odrout.beta, fitvars).reshape(pic.shape[0], pic.shape[1])
+            fitguess = gaussmod(corr_guess, fitvars).reshape(pic.shape[0], pic.shape[1])
+            fitresultgauss = []
+            fitresulttf = []
+        if mode == "tf":
+            fitresult = tfmod(odrout.beta, fitvars).reshape(pic.shape[0], pic.shape[1])
+            fitguess = tfmod(corr_guess, fitvars).reshape(pic.shape[0], pic.shape[1])
+            fitresultgauss = []
+            fitresulttf = []
+        if mode == "bimodal":
+            fitresult = bimodalmod(odrout.beta, fitvars).reshape(pic.shape[0], pic.shape[1])
+            fitresulttf = tfmod(odrout.beta[:8], fitvars).reshape(pic.shape[0], pic.shape[1])
+            fitresultgauss = gaussmod(np.append(odrout.beta[:5], odrout.beta[-3:]), fitvars).reshape(pic.shape[0],
+                                                                                                     pic.shape[1])
+            fitguess = bimodalmod(corr_guess, fitvars).reshape(pic.shape[0], pic.shape[1])
+
+        print("The shape of the pic file: \n{:}\n".format(pic.shape))
+        print("The guess parameters: \n{:}\n".format(corr_guess))
+        print("Odrout: \n{:}\n".format(odrout.beta))
+
+        # As the entire output, except for the angle, has to be positive,
+        # we take the absolute value of the entire list, then put the angle back in.
+        ang_temp = odrout.beta[2]
+        odrout.beta = np.abs(odrout.beta)
+        odrout.beta[2] = ang_temp % np.pi
+
+        # Converts the fit results to absolute pixel values in the unbinned image.
+        fit_results = odrout.beta * bin_scaling + rng_offset
+        phys_results = fit_results * to_physical
+
+        with open(full_path + 'parameters.param', 'r') as paramfile:
+            csvreader = csv.reader(paramfile, delimiter=',')
+            for row in csvreader:
+                if row[0] == "tof":
+                    tof = float(row[1]) / 1000.
+                if row[0] == "rftime":
+                    rftime = float(row[1])
+
+        ncount = -np.log(pic.flatten()).sum() * prefactor * pixelsize ** 2 * bin[0] * bin[1]
+        ntherm = 0
+        ntf = 0
+        tx = 0
+        tz = 0
+        mux = 0
+        muz = 0
+        mun = 0
+
+        if mode == "gauss":
+            ntherm = 2 * np.pi * phys_results[5] * phys_results[6] * phys_results[7]
+            tx = 1 / kB * m / 1 * (fx * np.pi * 2 * phys_results[6]) ** 2 / (1 + (tof * fx * np.pi * 2) ** 2)
+            tz = 1 / kB * m / 1 * (fz * np.pi * 2 * phys_results[7]) ** 2 / (1 + (tof * fz * np.pi * 2) ** 2)
+            mux = m / 1 * (fx * np.pi * 2 * phys_results[6]) ** 2 / (1 + (tof * fx * np.pi * 2) ** 2)
+            muz = m / 1 * (fz * np.pi * 2 * phys_results[7]) ** 2 / (1 + (tof * fz * np.pi * 2) ** 2)
+            mun = 1.47708846953 * np.power(
+                ntf * asc / (np.sqrt(hb / (m * np.power(8 * np.pi ** 3 * fx ** 2 * fz, 1. / 3.)))),
+                2. / 5.) * hb * np.power(8 * np.pi ** 3 * fx ** 2 * fz, 1. / 3.)
+        if mode == "tf":
+            ntf = 2. * np.pi / 5. * phys_results[5] * phys_results[6] * phys_results[7]  # 2/5 = 8/15 / (4/3)
+            tx = 1 / kB * m / 1 * (fx * np.pi * 2 * phys_results[6]) ** 2 / (1 + (tof * fx * np.pi * 2) ** 2)
+            tz = 1 / kB * m / 1 * (fz * np.pi * 2 * phys_results[7]) ** 2 / (1 + (tof * fz * np.pi * 2) ** 2)
+            mux = m / 1 * (fx * np.pi * 2 * phys_results[6]) ** 2 / (1 + (tof * fx * np.pi * 2) ** 2)
+            muz = m / 1 * (fz * np.pi * 2 * phys_results[7]) ** 2 / (1 + (tof * fz * np.pi * 2) ** 2)
+            mun = 1.47708846953 * np.power(
+                ntf * asc / (np.sqrt(hb / (m * np.power(8 * np.pi ** 3 * fx ** 2 * fz, 1. / 3.)))),
+                2. / 5.) * hb * np.power(8 * np.pi ** 3 * fx ** 2 * fz, 1. / 3.)
+        if mode == "bimodal":
+            ntf = 2. * np.pi / 5. * phys_results[5] * phys_results[6] * phys_results[7]
+            ntherm = 2 * np.pi * phys_results[8] * phys_results[9] * phys_results[10]
+            tx = 1 / kB * m / 1 * (fx * np.pi * 2 * phys_results[9]) ** 2 / (1 + (tof * fx * np.pi * 2) ** 2)
+            tz = 1 / kB * m / 1 * (fz * np.pi * 2 * phys_results[10]) ** 2 / (1 + (tof * fz * np.pi * 2) ** 2)
+            mux = m / 1 * (fx * np.pi * 2 * phys_results[6]) ** 2 / (1 + (tof * fx * np.pi * 2) ** 2)
+            muz = m / 1 * (fz * np.pi * 2 * phys_results[7]) ** 2 / (1 + (tof * fz * np.pi * 2) ** 2)
+            mun = 1.47708846953 * np.power(
+                ntf * asc / (np.sqrt(hb / (m * np.power(8 * np.pi ** 3 * fx ** 2 * fz, 1. / 3.)))),
+                2. / 5.) * hb * np.power(8 * np.pi ** 3 * fx ** 2 * fz, 1. / 3.)
+
+        ntotal = ntherm + ntf
+        return pic, fitguess, fitresult, ntotal, tx, tz, odrout.beta
+
+    # STEP 5: Plot all
+    def plotAll(date, shot, dz_focus, mode, update=update, ignore=ignore, preview_plane=False, plot_var=plot_var):
+        """ If preview plane then display the fits as well. """
+        # Plots
+        path = '/storage/data/' + str(date) + '/'
+        image = str(shot).zfill(4) + '/'
+        full_path = path + image
+        cooling_path = full_path + "OAHcooling/"
+        if not os.path.exists(cooling_path):
+            os.makedirs(cooling_path)
+
+        pnums = []
+        txs = []
+        tzs = []
+        time_l = []
+        odroutbetas = []
+
+        output = OAHprocess(date, shot, dz_focus)  # OAH analysis
+        pic_num = pyfits.open(full_path + '0.fits')[0].data.astype(float)[:].shape[0]
+
+        if preview_plane:
+            xplots = math.ceil(pic_num / 4)
+            yplots = 4
+            fig, ax = plt.subplots(xplots, yplots, figsize=(10, 8))
+            for k in range(xplots):
+                for m in range(yplots):
+                    ax[k][m].set_xticks([])
+                    ax[k][m].set_yticks([])
+                    ax[k][m].axis("off")
+                    fig.tight_layout()
+
+        for i in range(pic_num):
+            pict = picPrep(output, i, cut=cut, bin=bin)  # Optimize the pic
+            pic, fitguess, fitresult, ntotal, tx, tz, odroutbeta = fitPic(pict, mode, date=date, shot=shot)
+            levels = np.linspace(pic.min(), pic.max(), 15)
+            if preview_plane:
+                yp = math.floor(i / xplots)
+                xp = i % xplots
+                ax[xp][yp].imshow(pic, cmap='afmhot', vmin=pic.min(), vmax=pic.max())
+                ax[xp][yp].contour(fitresult, levels, cmap='gray',  vmin=pic.min(), vmax=pic.max(), alpha=0.75)
+                ax[xp][yp].text(0, 0, i)
+                if i in ignore:
+                    ax[xp][yp].axis("on")
+                    for axis in ['top', 'bottom', 'left', 'right']:
+                        ax[xp][yp].spines[axis].set_color('gray')
+                        ax[xp][yp].spines[axis].set_linewidth(4)
+                    plt.savefig(cooling_path + "/fits_{:}_{:}.png".format(date, shot))
+
+            if i not in ignore:  #To enable ignoring poor fits
+                pnums.append(ntotal)
+                txs.append(tx)
+                tzs.append(tz)
+                time_l.append(i*time_between_shots)
+                odroutbetas.append(odroutbeta)
+
+            if __name__ != "__main__":
+                update.setValue(i * 100 // pic_num)
+
+        # Save the temps and particle numbers to allow for plotting vs other shots.
+        np.save(cooling_path + 'temps_x', np.array(txs))
+        np.save(cooling_path + 'temps_z', np.array(tzs))
+        np.save(cooling_path + 'pnums', np.array(tzs))
+        np.save(cooling_path + 'time_list', np.array(time_l))
+        np.save(cooling_path + 'odrout_betas', np.array(odroutbetas))
+
+        fig2 = plt.figure(figsize=(10, 8))
+        gs = GridSpec(2, 2, width_ratios=[1, 2], height_ratios=[1, 1])
+        gs.update(wspace=0.25, hspace=0.)  # set the spacing between axes.
+
+        ax1 = fig2.add_subplot(gs[0, 0])
+        ax2 = fig2.add_subplot(gs[1, 0], sharex=ax1)
+        ax3 = fig2.add_subplot(gs[:, 1])
+        plt.setp(ax1.get_xticklabels(), visible=False)
+
+        ax1.plot(time_l, pnums, c='g')
+        ax2.plot(time_l, txs, label="Temperature-x")
+        ax2.plot(time_l, tzs, label="Temperature-z")
+        ax3.scatter(np.log(txs), np.log(pnums), label="Temp-x")
+        ax3.scatter(np.log(tzs), np.log(pnums), label="Temp-z")
+        ax3.grid()
+        ax3.legend()
+
+        ax1.set_ylabel("Particle Number")
+        ax2.set_ylabel("Temparature [K]")
+        ax2.set_xlabel("Time [ms]")
+        ax3.set_xlabel("Log (T)")
+        ax3.set_ylabel("Log (N)")
+
+        ax1.ticklabel_format(axis='both', style='', scilimits=(0, 0))
+        ax2.ticklabel_format(axis='both', style='', scilimits=(0, 0))
+        ax3.set_title("{:} -- {:}".format(date, shot))
+        plt.savefig(cooling_path + "{:}_{:}.png".format(date, shot))
+        if plot_var:
+            plt.show()
+
+    plotAll(date, shot, dz_focus, mode, preview_plane=True)
+
+
+if __name__ == "__main__":
+    coolingOAH_main(m_seq=m_seq[N])
