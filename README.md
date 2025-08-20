@@ -2,7 +2,8 @@
   BECplorer — BEC Data Visualiser
 </h1>
 
-<img align="left" width="190" height="190" alt="icon" src="https://github.com/user-attachments/assets/b66db70b-0979-4a14-be07-a72687521d06">
+<img align="left" width="128" height="128" alt="icon" src="https://github.com/user-attachments/assets/b66db70b-0979-4a14-be07-a72687521d06">
+
 
 <p align="center">
   A lightweight framework for inspecting and analyzing <code>.fits</code> images from the UU BEC Lab.
