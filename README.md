@@ -10,7 +10,7 @@ Built with PyQt5. Special features for analysis of cold atoms data obtained thro
 <p align="center">
   <a href="#features">Features</a> •
   <a href="#quick-start">Quick start</a> •
-  <a href="#usage">Usage</a> •
+  <a href="#usage">Usage</a>
 </p>
 
 ---
@@ -18,6 +18,7 @@ Built with PyQt5. Special features for analysis of cold atoms data obtained thro
 ## Features
 
 - **Fast FITS viewer**: open large image stacks; lazy-loading for speed.
+- **Live plotting and analysis**: real-time updates and analysis of the incoming data. Features such as live particle number, temperature and cooling efficiency.
 - **Interactive inspection**: pan/zoom, pixel probe, ROI selection, linecuts.
 - **Batch tools**: normalization, cropping, mask application.
 - **BEC-specific analysis**:
@@ -27,6 +28,8 @@ Built with PyQt5. Special features for analysis of cold atoms data obtained thro
 - **Comment**: enables commenting and exporting batch comments.
 - **Session management**: autosave session state; reopen where you left off.
 - **Export**: figures, CSVs of fit parameters, and MP4/GIF for time series.
+- **SOAH-features**: fast-Fourier transform analysis of interference patterns, extraction of the entire field. For details and the theory behind it see Blaznik's PhD thesis. 
+- **SVD and PCA-features**: principal-component analysis features - using large datasets of background images, a PCA analysis can be performed in order to minimize the noise of the phase images obtained through SOAH. For detailes see Blaznik's PhD thesis, or in the <a href="https://orcid.org/0009-0003-7288-719X">article</a>.
 
 > Screenshots  
 > <img width="365" height="192" alt="BEC_Viewer (4)" src="https://github.com/user-attachments/assets/2807d665-2cd4-4ddf-9035-fb0d464c232a" />
@@ -57,8 +60,6 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 # 3) Install
 pip install -U pip
 pip install -r requirements.txt
-# or: pip install -e .   # if you provide a pyproject.toml/setup.cfg
 
 # 4) Run
-python -m becplorer
-# or: becplorer           # if installed as a console script
+python -m gui.py
