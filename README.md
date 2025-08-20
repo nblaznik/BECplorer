@@ -6,8 +6,7 @@
 
 
 <p align="center">
-  A lightweight framework for inspecting and analyzing <code>.fits</code> images from the UU BEC Lab.
-  Built with PyQt5. Special features for analysis of cold atoms data obtained through Off-axis holography.
+  A lightweight framework for inspecting and analyzing <code>.fits</code> images from the UU BEC Lab. Built on PyQt5. Special features for analysis of cold atoms data obtained through Off-axis holography, with capabilities for principal-component analysis, as described in <a href="https://orcid.org/0009-0003-7288-719X">here</a>. Refer to Blaznik's PhD thesis for further details.
 </p>
 
 
