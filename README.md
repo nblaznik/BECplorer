@@ -4,16 +4,13 @@
 <h1 align="center">BECplorer — BEC Data Visualiser</h1>
 <p align="center">
 A lightweight framework for inspecting and analyzing <code>.fits</code> images from the UU BEC Lab.<br>
-Built with PyQt5. Cross-platform. Extensible.
+Built with PyQt5. Special features for analysis of cold atoms data obtained through Off-axis holography.
 </p>
 
 <p align="center">
   <a href="#features">Features</a> •
   <a href="#quick-start">Quick start</a> •
   <a href="#usage">Usage</a> •
-  <a href="#plugins--extensibility">Plugins</a> •
-  <a href="#roadmap">Roadmap</a> •
-  <a href="#citing">Citing</a>
 </p>
 
 ---
