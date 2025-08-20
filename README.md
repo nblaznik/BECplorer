@@ -1,5 +1,5 @@
 # The BEC Data Visualiser
-<img width="1536" height="438" alt="becplorer" src="https://github.com/user-attachments/assets/1d9a8c92-4549-4d63-8225-83166d0e54a1" />
+<img width="728" height="219" alt="becplorer" src="https://github.com/user-attachments/assets/1d9a8c92-4549-4d63-8225-83166d0e54a1" />
 
 
 A framework for inspecting and analysing .fits images obtained in the UU BEC Lab. Built using PyQt5 library.  
